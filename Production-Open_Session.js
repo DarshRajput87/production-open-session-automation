@@ -53,23 +53,31 @@ if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir, { recursive: true });
 if (!fs.existsSync(partyDir)) fs.mkdirSync(partyDir, { recursive: true });
 
 // =====================================================
-// DATE WINDOW
+// 🕒 TIME CALCULATION (STABLE IST - SAME ON EC2 & LOCAL)
 // =====================================================
-const nowIST = new Date(
-  new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+
+// Current UTC timestamp
+const nowUTC = new Date();
+
+// Convert UTC → IST using fixed offset (+5h30m)
+const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+const nowIST = new Date(nowUTC.getTime() + IST_OFFSET);
+
+// First day of month in IST (keep logic same)
+const firstDayIST = new Date(
+  nowIST.getFullYear(),
+  nowIST.getMonth(),
+  1
 );
 
-const firstDayIST = new Date(nowIST.getFullYear(), nowIST.getMonth(), 1);
-const bufferTime = new Date(nowIST.getTime() - 5 * 60 * 60 * 1000);
+// Current IST minus 5 hours (LOGIC UNCHANGED)
+const bufferTimeIST = new Date(nowIST.getTime() - 5 * 60 * 60 * 1000);
 
-const headers = {
-  Authorization: `Bearer ${TOKEN}`,
-  "Content-Type": "application/json",
-};
-
+// IMPORTANT:
+// API expects ISO → always send UTC ISO
 const filterBody = {
-  from: firstDayIST.toISOString(),
-  to: bufferTime.toISOString(),
+  from: new Date(firstDayIST.getTime() - IST_OFFSET).toISOString(),
+  to: new Date(bufferTimeIST.getTime() - IST_OFFSET).toISOString(),
   report: "bookingHistory",
   status: "in_progress",
   is_emsp_based_booking: false,

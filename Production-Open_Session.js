@@ -251,7 +251,6 @@ async function processPartyEmails() {
 
     for (const row of data) {
 
-      // 🔵 LIVE DB SYNC + EXCEL UPDATE
       const live = liveBookingMap[row["Booking Id"]];
 
       if (live) {
@@ -276,7 +275,6 @@ async function processPartyEmails() {
           row.ThreadDate = todayDate;
           notifyIDs.push(row["Booking Id"]);
         }
-
         else if (
           row.Session === "MORNING" &&
           !row["Reminder 1"] &&
@@ -285,7 +283,6 @@ async function processPartyEmails() {
         ) {
           reminderIDs.push(row["Booking Id"]);
         }
-
         else if (
           row.Session === "MORNING" &&
           !row["Final Reminder"] &&
@@ -303,7 +300,6 @@ async function processPartyEmails() {
           row.ThreadDate = todayDate;
           notifyIDs.push(row["Booking Id"]);
         }
-
         else if (
           row.Session === "EVENING" &&
           !row["Reminder 1"] &&
@@ -312,7 +308,6 @@ async function processPartyEmails() {
         ) {
           reminderIDs.push(row["Booking Id"]);
         }
-
         else if (
           row.Session === "EVENING" &&
           !row["Final Reminder"] &&
@@ -324,18 +319,79 @@ async function processPartyEmails() {
       }
     }
 
+    // =====================================================
+    // 📧 SEND MAIL FUNCTION (UPDATED CONTENT)
+    // =====================================================
     async function send(type, ids) {
 
       if (!ids.length) return;
 
       log("MAIL", `${type} → ${partyId} (${ids.length})`);
 
+      const lifecycle =
+        RUN_MODE === "MORNING"
+          ? "Morning Cycle (08:00 AM IST)"
+          : "Evening Cycle (05:00 PM IST)";
+
+      // Build simple table rows
+      const rowsHTML = ids.map(id => {
+
+        const row = data.find(r => r["Booking Id"] === id);
+
+        const date =
+          row?.Notification ||
+          row?.["Reminder 1"] ||
+          row?.ThreadDate ||
+          "N/A";
+
+        return `
+          <tr>
+            <td style="border:1px solid #ccc;padding:5px;">${id}</td>
+            <td style="border:1px solid #ccc;padding:5px;">${date}</td>
+            <td style="border:1px solid #ccc;padding:5px;">${row?.["Final Status"] || "in_progress"}</td>
+          </tr>
+        `;
+      }).join("");
+
+      const htmlContent = `
+        <div style="font-family:Arial;font-size:14px;">
+          <p>Hello Team,</p>
+
+          <p>
+            <b>${type}</b> triggered for Party <b>${partyId}</b>.
+          </p>
+
+          <p>
+            Lifecycle: ${lifecycle}<br/>
+            Date: ${todayDate}
+          </p>
+
+          <p>Below sessions are still IN PROGRESS:</p>
+
+          <table style="border-collapse:collapse;">
+            <tr style="background:#f2f2f2;">
+              <th style="border:1px solid #ccc;padding:5px;">Booking ID</th>
+              <th style="border:1px solid #ccc;padding:5px;">Lifecycle Date</th>
+              <th style="border:1px solid #ccc;padding:5px;">Status</th>
+            </tr>
+            ${rowsHTML}
+          </table>
+
+          <p>Please verify and close sessions if completed.</p>
+
+          <hr/>
+          <p style="color:#666;font-size:12px;">
+            Automated Mail - Chargezone Reminder Engine
+          </p>
+        </div>
+      `;
+
       const mailOptions = {
         from: "noreply@chargezone.co.in",
         to: emails,
         cc: ccEmails,
         subject: `Open Sessions - ${partyId} - ${todayDate}`,
-        html: `<p>${type}</p>`
+        html: htmlContent
       };
 
       if (threadId) {

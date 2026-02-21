@@ -55,6 +55,13 @@ if (!fs.existsSync(partyDir)) fs.mkdirSync(partyDir, { recursive: true });
 // =====================================================
 // 🕒 TIME CALCULATION (STABLE IST - SAME ON EC2 & LOCAL)
 // =====================================================
+// =====================================================
+// 🔐 REQUEST HEADERS (MISSING)
+// =====================================================
+const headers = {
+  Authorization: `Bearer ${TOKEN}`,
+  "Content-Type": "application/json",
+};
 
 // Current UTC timestamp
 const nowUTC = new Date();

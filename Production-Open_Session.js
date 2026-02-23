@@ -430,15 +430,23 @@ async function processPartyEmails() {
 
     data.forEach((r) => {
 
-      if (notifyIDs.includes(r["Booking Id"]) && !r.Notification)
-        r.Notification = now.toISOString();
+  if (notifyIDs.includes(r["Booking Id"]) && !r.Notification)
+    r.Notification = now.toISOString();
 
-      if (reminderIDs.includes(r["Booking Id"]))
-        r["Reminder 1"] = now.toISOString();
+  if (reminderIDs.includes(r["Booking Id"]))
+    r["Reminder 1"] = now.toISOString();
 
-      if (finalIDs.includes(r["Booking Id"]))
-        r["Final Reminder"] = now.toISOString();
-    });
+  if (finalIDs.includes(r["Booking Id"])) {
+    r["Final Reminder"] = now.toISOString();
+
+    // ✅ NEW LOGIC — CLOSE THREAD AFTER FINAL REMINDER
+    r.ThreadClosed = "YES";
+
+    // Optional but recommended:
+    // clear threadId so next cycle starts fresh thread
+    r.ThreadId = "";
+  }
+});
 
     const newWB = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(newWB, XLSX.utils.json_to_sheet(data), "PartyData");

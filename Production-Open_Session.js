@@ -13,7 +13,7 @@ const { MongoClient, ObjectId } = require("mongodb");
 // =====================================================
 const BASE_URL = "https://appapi.chargecloud.net/v1/report/bookinghistory";
 
-const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NDJlZTBkNmU1MmIzYjg1MWNmN2MxMjkiLCJhdXRoVG9rZW5WZXJzaW9uIjoidjEiLCJpYXQiOjE3NzEzMTc4MzgsImV4cCI6MTc3MjYxMzgzOCwidHlwZSI6ImFjY2VzcyJ9.qO5zt2MqTSSzuSLV8muFoO6ePafkr1sArArPhXISttQ";
+const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NDJlZTBkNmU1MmIzYjg1MWNmN2MxMjkiLCJhdXRoVG9rZW5WZXJzaW9uIjoidjEiLCJpYXQiOjE3NzI1MjA3MDAsImV4cCI6MTc3MzgxNjcwMCwidHlwZSI6ImFjY2VzcyJ9.ICilt8jSUSbr7N-l2sdsOD665DOGI3as7c91QxKb4Z0";
 const MONGO_URI = "mongodb+srv://IT_INTERN:ITINTERN123@cluster1.0pycd.mongodb.net/chargezoneprod";
 const RUN_MODE = process.argv[2] || "MORNING";
 
@@ -400,11 +400,10 @@ async function processPartyEmails() {
           </p>
         </div>
       `;
-
       const mailOptions = {
         from: "noreply@chargezone.co.in",
         to: emails,
-        cc: ccEmails,
+        cc: ccEmails,   // ✅ use the variable you created
         subject: `Open Sessions - ${partyId} - ${todayDate}`,
         html: htmlContent
       };
@@ -430,23 +429,15 @@ async function processPartyEmails() {
 
     data.forEach((r) => {
 
-  if (notifyIDs.includes(r["Booking Id"]) && !r.Notification)
-    r.Notification = now.toISOString();
+      if (notifyIDs.includes(r["Booking Id"]) && !r.Notification)
+        r.Notification = now.toISOString();
 
-  if (reminderIDs.includes(r["Booking Id"]))
-    r["Reminder 1"] = now.toISOString();
+      if (reminderIDs.includes(r["Booking Id"]))
+        r["Reminder 1"] = now.toISOString();
 
-  if (finalIDs.includes(r["Booking Id"])) {
-    r["Final Reminder"] = now.toISOString();
-
-    // ✅ NEW LOGIC — CLOSE THREAD AFTER FINAL REMINDER
-    r.ThreadClosed = "YES";
-
-    // Optional but recommended:
-    // clear threadId so next cycle starts fresh thread
-    r.ThreadId = "";
-  }
-});
+      if (finalIDs.includes(r["Booking Id"]))
+        r["Final Reminder"] = now.toISOString();
+    });
 
     const newWB = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(newWB, XLSX.utils.json_to_sheet(data), "PartyData");
@@ -484,10 +475,9 @@ async function runAutomation() {
 
     console.error(err);
 
-    try { await mongoClient.close(); } catch {}
+    try { await mongoClient.close(); } catch { }
 
     process.exit(1);
   }
 }
-
 runAutomation();
